@@ -1,20 +1,27 @@
-buildscript {
-	repositories {
-		mavenCentral()
-        jcenter()
-        google()
+apply plugin: 'com.android.library'
+apply from: '../../../Commons/version.gradle'
+apply from: '../../android-version.gradle'
+
+android {
+    compileSdkVersion 25
+    buildToolsVersion androidVersion.buildToolsVersion
+
+    defaultConfig {
+        minSdkVersion 14
+        targetSdkVersion 25
+        versionCode androidVersion.versionAndroidBuild
+        versionName androidVersion.versionName
     }
-    dependencies {
-        classpath 'com.android.tools.build:gradle:3.0.1'
+
+    lintOptions {
+        abortOnError false
     }
+
+    useLibrary 'org.apache.http.legacy'
 }
 
-allprojects {
-    repositories {
-        mavenCentral()
-        jcenter()
-        google()
-        maven { url 'https://maven.google.com' }
-        maven { url 'https://oss.sonatype.org/content/repositories/snapshots/' }
-    }
+dependencies {
+    compile 'com.klinkerapps:logger:1.0.3'
+    compile 'com.squareup.okhttp:okhttp:2.5.0'
+    compile 'com.squareup.okhttp:okhttp-urlconnection:2.5.0'
 }
