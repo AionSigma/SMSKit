@@ -35,6 +35,7 @@ public class MmsSentReceiver extends BroadcastReceiver {
     public static final String MMS_SENT = "com.klinker.android.messaging.MMS_SENT";
     public static final String EXTRA_CONTENT_URI = "content_uri";
     public static final String EXTRA_FILE_PATH = "file_path";
+    public static final String EXTRA_TASK_IDENTIFIER = "task_identifier";
 
     @Override
     public void onReceive(Context context, Intent intent) {

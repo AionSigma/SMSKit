@@ -135,8 +135,10 @@ public class Transaction {
      *
      * @param message  is the message that you want to send
      * @param threadId is the thread id of who to send the message to (can also be set to Transaction.NO_THREAD_ID)
+     * @param taskIdentifier is the identifier for the task which can be used in a receiver to update the presentation layer
      */
-    public void sendNewMessage(Message message, long threadId) {
+
+    public void sendNewMessage(Message message, long threadId, String taskIdentifier) {
         this.saveMessage = message.getSave();
 
         // if message:
@@ -154,9 +156,9 @@ public class Transaction {
             try { Looper.prepare(); } catch (Exception e) { }
             RateController.init(context);
             DownloadManager.init(context);
-            sendMmsMessage(message.getText(), message.getAddresses(), message.getImages(), message.getImageNames(), message.getParts(), message.getSubject());
+            sendMmsMessage(message.getText(), message.getAddresses(), message.getImages(), message.getImageNames(), message.getParts(), message.getSubject(), taskIdentifier);
         } else {
-            sendSmsMessage(message.getText(), message.getAddresses(), threadId, message.getDelay());
+            sendSmsMessage(message.getText(), message.getAddresses(), threadId, message.getDelay(), taskIdentifier);
         }
 
     }
@@ -200,7 +202,7 @@ public class Transaction {
         return this;
     }
 
-    private void sendSmsMessage(String text, String[] addresses, long threadId, int delay) {
+    private void sendSmsMessage(String text, String[] addresses, long threadId, int delay, String identifier) {
         Log.v("send_transaction", "message text: " + text);
         Uri messageUri = null;
         int messageId = 0;
@@ -251,6 +253,7 @@ public class Transaction {
                 }
 
                 sentIntent.putExtra("message_uri", messageUri == null ? "" : messageUri.toString());
+                sentIntent.putExtra("task_identifier", identifier);
                 PendingIntent sentPI = PendingIntent.getBroadcast(
                         context, messageId, sentIntent, PendingIntent.FLAG_UPDATE_CURRENT);
 
@@ -263,6 +266,7 @@ public class Transaction {
                 }
 
                 deliveredIntent.putExtra("message_uri", messageUri == null ? "" : messageUri.toString());
+                deliveredIntent.putExtra("task_identifier", identifier);
                 PendingIntent deliveredPI = PendingIntent.getBroadcast(
                         context, messageId, deliveredIntent, PendingIntent.FLAG_UPDATE_CURRENT);
 
@@ -387,7 +391,7 @@ public class Transaction {
         }
     }
 
-    private void sendMmsMessage(String text, String[] addresses, Bitmap[] image, String[] imageNames, List<Message.Part> parts, String subject) {
+    private void sendMmsMessage(String text, String[] addresses, Bitmap[] image, String[] imageNames, List<Message.Part> parts, String subject, String identifier) {
         // merge the string[] of addresses into a single string so they can be inserted into the database easier
         String address = "";
 
@@ -487,7 +491,7 @@ public class Transaction {
 
             if (settings.getUseSystemSending()) {
                 Log.v(TAG, "using system method for sending");
-                sendMmsThroughSystem(context, subject, data, addresses, explicitSentMmsReceiver);
+                sendMmsThroughSystem(context, subject, data, addresses, explicitSentMmsReceiver, identifier);
             } else {
                 try {
                     MessageInfo info = getBytes(context, saveMessage, address.split(" "),
@@ -630,7 +634,7 @@ public class Transaction {
     public static final int DEFAULT_PRIORITY = PduHeaders.PRIORITY_NORMAL;
 
     private static void sendMmsThroughSystem(Context context, String subject, List<MMSPart> parts,
-                                             String[] addresses, Intent explicitSentMmsReceiver) {
+                                             String[] addresses, Intent explicitSentMmsReceiver, String identifier) {
         try {
             final String fileName = "send." + String.valueOf(Math.abs(new Random().nextLong())) + ".dat";
             File mSendFile = new File(context.getCacheDir(), fileName);
@@ -650,6 +654,7 @@ public class Transaction {
 
             intent.putExtra(MmsSentReceiver.EXTRA_CONTENT_URI, messageUri.toString());
             intent.putExtra(MmsSentReceiver.EXTRA_FILE_PATH, mSendFile.getPath());
+            intent.putExtra(MmsSentReceiver.EXTRA_TASK_IDENTIFIER, identifier);
             final PendingIntent pendingIntent = PendingIntent.getBroadcast(
                     context, 0, intent, PendingIntent.FLAG_CANCEL_CURRENT);
 
